@@ -1,0 +1,26 @@
+name: SwiftyScepBuild
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: 0 0 * * *
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v3
+    - name: Build and test ( macOS x86-64 latest)
+      run: xcodebuild test -scheme SwiftyScep -destination 'platform=macOS,arch=x86_64'
+    - name: Build and test ( macOS ARM latest)
+      run: xcodebuild test -scheme SwiftyScep -destination 'platform=macOS,arch=x86_64,id=4666018E-420F-C1B5-9525-B145CECA79EB'
+    - name: Build and test ( tvOS latest)
+      run: xcodebuild test -scheme SwiftyScep -destination 'platform=tvOS Simulator,name=Apple TV 4K (2nd generation)'
+    - name: Build and test ( iOS latest)
+      run: xcodebuild test -scheme SwiftyScep -destination 'platform=iOS Simulator,name=iPhone 13 Pro Max'
+    - name: Build and test ( watchOS latest)
+      run: xcodebuild test -scheme SwiftyScep -destination 'platform=watchOS Simulator,name=Apple Watch Series 7 - 45mm'
