@@ -76,7 +76,7 @@ enum KeyType {
     }
 }
 
-protocol Key {
+protocol Key: PkiObject {
     var mRef: SecKey { get }
     
     var mClass: KeyClass { get }

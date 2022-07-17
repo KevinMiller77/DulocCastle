@@ -13,6 +13,9 @@ struct PrivateKey: Key {
     let mClass: KeyClass = KeyClass.PRIVATE
     var mType: KeyType
     
+    var identifier: Pem.ObjectIdentifier
+    var der: Data
+    
     /// Create key initialized uses the Apple SecKey generation methods.
     /// Params:
     ///     tag  : Text identifier for retrieving and storing this key
@@ -35,8 +38,10 @@ struct PrivateKey: Key {
         switch(mType) {
         case(.RSA):
             defaultBits = 4096
+            identifier = .RSA
         case(.EC):
             defaultBits = 256
+            identifier = .ECPRIVATEKEY
         }
         
         
@@ -83,6 +88,13 @@ struct PrivateKey: Key {
         }
         
         mRef = key
+        
+        var error: Unmanaged<CFError>?
+        guard let data = SecKeyCopyExternalRepresentation(key, &error) as? Data else {
+            throw error!.takeRetainedValue() as Error
+        }
+        
+        der = data
     }
     
     init(
@@ -101,8 +113,22 @@ struct PrivateKey: Key {
             throw KeyError.InvalidTypeErr
         }
         
+        switch(copyType) {
+        case(KeyType.RSA):
+            identifier = .RSA
+        case(KeyType.EC):
+            identifier = .ECPRIVATEKEY
+        }
+        
         mType   = copyType
         mRef    = copyRef
+        
+        var error: Unmanaged<CFError>?
+        guard let data = SecKeyCopyExternalRepresentation(copyRef, &error) as? Data else {
+            throw error!.takeRetainedValue() as Error
+        }
+        
+        der = data
     }
     
     func getPublicKey() -> PublicKey? {
