@@ -26,7 +26,8 @@ A lot of inspiration was taken from the [Simple ASN.1 Reader and Writer by nexti
 - [ ] Wrapping of existing structures
 
 #### General PKI
-
+- [x] PEM to DER Conversion
+- [x] DER to PEM Conversion
 - [x] RSA and ECC key generation (Apple SecKey/Secure Enclave)
     - [x] Biometric usage
     - [x] Saving to KeyChain
