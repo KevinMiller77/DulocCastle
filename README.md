@@ -14,52 +14,52 @@ A lot of inspiration was taken from the [Simple ASN.1 Reader and Writer by nexti
 
 ## Features
 ### PKI Features
-#### ASN.1 Reader
+#### ASN.1 Reader (0.1.0)
 - [ ] Reading ASN.1 BER/DER/CER format
 - [ ] Conversion of ASN.1 data to Swift types
 - [ ] Ease of use functionality for ASN.1 traversal (probably with dictionaries)
 
-#### ASN.1 Writer
+#### ASN.1 Writer (0.2.0)
 - [ ] Encoding bytes using the ASN.1 BER encoding format
 - [ ] Easy insertion of new bytes to already written structure
 - [ ] Composition of structured and nested types
 - [ ] Wrapping of existing structures
 
-#### General PKI
-- [x] PEM to DER Conversion
-- [x] DER to PEM Conversion
-- [x] RSA and ECC key generation (Apple SecKey/Secure Enclave)
+#### General PKI (0.4.0)
+- [x] PEM to DER Conversion (0.3.1)
+- [x] DER to PEM Conversion (0.3.1)
+- [x] RSA and ECC key generation (Apple SecKey/Secure Enclave) (0.3.2)
     - [x] Biometric usage
     - [x] Saving to KeyChain
     - [ ] Encryption with keys
     - [ ] Signing with keys
     - [ ] ASN.1 representation
-- [ ] Distinguished Name
+- [ ] Distinguished Name (0.4.1)
   - [ ] Swift
   - [ ] ASN.1
-- [ ] X509 Certificate
+- [ ] X509 Certificate (0.4.2)
   - [ ] Swift
   - [ ] ASN.1
   - [ ] Saved as Apple SecCertificate
   - [ ] Store the the Key Chain
-- [ ] Certificate Revocation List
+- [ ] Certificate Revocation List (0.4.3)
   - [ ] Swift
   - [ ] ASN.1
-- [ ] PKCS#10 Certificate Signing Request
+- [ ] PKCS#10 Certificate Signing Request (0.4.4)
   - [ ] Swift
   - [ ] ASN.1
-- [ ] PKCS#7
+- [ ] PKCS#7 (0.4.5)
   - [ ] Swift
   - [ ] ASN.1
 
-### SCEP Features
-  - [ ] SCEP pkcsPKIEnvelope construction (Enveloped PKCS#7) 
+### SCEP Features(1.0.0)
+  - [ ] SCEP pkcsPKIEnvelope construction (Enveloped PKCS#7) (0.5.0)
     - [ ] PKCSReq
     - [ ] RenewalReq
     - [ ] CertPoll
     - [ ] GetCert
     - [ ] GetCRL
-  - [ ] SCEP client
+  - [ ] SCEP client (0.6.0)
     - [ ] Server capabilities fetching
     - [ ] Certificate chain
     - [ ] Certificate revocation lists
