@@ -10,7 +10,7 @@ I couldn't find anything that really got the job done so I've decided to take a 
 The intention of this library is that it will not depend on any other libraries and will be fully self contained. 
 Therefore - it will be more than just a SCEP client. It will also be a fully loaded PKI library that is able to create most PKI structures.
 
-A lot of inspiration was taken from the [Simple ASN.1 Reader and Writer by nextincrement](https://github.com/nextincrement/simple-asn1-reader-writer)
+A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/ASN1Swift)
 
 ## Features
 ### PKI Features
