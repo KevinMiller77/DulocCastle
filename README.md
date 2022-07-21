@@ -1,31 +1,31 @@
-# SwiftyScep
+# DulocCastle
 
-Swifty Scep is a SCEP client written in Swift.
+DulocCastle is a general cryptographic library written in Swift.
 
 [![Swift Version][swift-image]][swift-url] [![License][license-image]][license-url]
 
-I was looking for a nice SCEP client that easily interfaces with Apple CommonCrypto and Keychain. 
+I was looking for a nice cryptographic library that easily interfaces with Apple CommonCrypto and Keychain. 
 I couldn't find anything that really got the job done so I've decided to take a crack at it myself.
 
 The intention of this library is that it will not depend on any other libraries and will be fully self contained. 
-Therefore - it will be more than just a SCEP client. It will also be a fully loaded PKI library that is able to create most PKI structures.
+It will be a fully loaded PKI library that will support the most common cryptpgraphic structures and functions.
 
-A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/ASN1Swift)
+A lot of inspiration for the creation of this library was BouncyCastle in Java and it's lack of existence in Swift.
 
 ## Features
 ### PKI Features
-#### ASN.1 Reader (0.1.0)
+#### ASN.1 Decoder (0.1.0)
 - [ ] Reading ASN.1 BER/DER/CER format
 - [ ] Conversion of ASN.1 data to Swift types
 - [ ] Ease of use functionality for ASN.1 traversal (probably with dictionaries)
 
-#### ASN.1 Writer (0.2.0)
-- [ ] Encoding bytes using the ASN.1 BER encoding format
+#### ASN.1 Encoder (0.2.0)
+- [ ] Encoding bytes using the ASN.1 BER/DER encoding format
 - [ ] Easy insertion of new bytes to already written structure
 - [ ] Composition of structured and nested types
 - [ ] Wrapping of existing structures
 
-#### General PKI (0.4.0)
+#### General PKI Structures (0.4.0)
 - [x] PEM to DER Conversion (0.3.1)
 - [x] DER to PEM Conversion (0.3.1)
 - [x] RSA and ECC key generation (Apple SecKey/Secure Enclave) (0.3.2)
@@ -52,27 +52,6 @@ A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/A
   - [ ] Swift
   - [ ] ASN.1
 
-### SCEP Features(1.0.0)
-  - [ ] SCEP pkcsPKIEnvelope construction (Enveloped PKCS#7) (0.5.0)
-    - [ ] PKCSReq
-    - [ ] RenewalReq
-    - [ ] CertPoll
-    - [ ] GetCert
-    - [ ] GetCRL
-  - [ ] SCEP client (0.6.0)
-    - [ ] Server capabilities fetching
-    - [ ] Certificate chain
-    - [ ] Certificate revocation lists
-    - [ ] Certificate issuance request
-    - [ ] Certificate issuance polling
-    - [ ] Certificate reissuance
-
-
-[swift-image]:https://img.shields.io/badge/swift-5.0-orange.svg
-[swift-url]:https://swift.org/
-[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
-[license-url]: LICENSE
-
 ## Usage
 
 `There isn't really anything to use at the moment but keep checking back!`
@@ -80,6 +59,10 @@ A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/A
 ## Resources
 
 - [Laymans ASN.1 BER and DER](http://luca.ntop.org/Teaching/Appunti/asn1.html)
+
+- [X.690 ASN.1 Encoding Rules](https://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf)
+
+- [X.690 Specification of ASN.1 basic notation](https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-X.680-202102-I!!PDF-E&type=items)
 
 - [RSA Public Key Cryptography Syntax (PKCS) RFC](https://datatracker.ietf.org/doc/html/rfc8017)
 
@@ -90,3 +73,8 @@ A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/A
 - [PKCS#7 Cryptographic Message Syntax (CMS) RFC](https://datatracker.ietf.org/doc/html/rfc2315)
 
 - [Simple Certificate Enrollment Protocol (SCEP) RFC](https://datatracker.ietf.org/doc/html/rfc8894)
+
+[swift-image]:https://img.shields.io/badge/swift-5.0-orange.svg
+[swift-url]:https://swift.org/
+[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
+[license-url]: LICENSE

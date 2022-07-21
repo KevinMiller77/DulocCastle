@@ -6,10 +6,9 @@
 //
 
 import XCTest
-@testable import SwiftyScep
+@testable import DulocCastle
 
 class StringTests: XCTestCase {
-    
     func testStringInserter() throws {
         let testString = "01234567890123456789012345678901234567890123456789"
         let testSplit =  "0123456789 0123456789 0123456789 0123456789 0123456789"
@@ -18,5 +17,4 @@ class StringTests: XCTestCase {
         
         XCTAssert(testSplit == execSplit)
     }
-
 }

@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import SwiftyScep
+@testable import DulocCastle
 
 final class PemTests: XCTestCase {
     func testPemConverters() throws {

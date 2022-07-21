@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "SwiftyScep"
-               BuildableName = "SwiftyScep"
-               BlueprintName = "SwiftyScep"
+               BlueprintIdentifier = "DulocCastle"
+               BuildableName = "DulocCastle"
+               BlueprintName = "DulocCastle"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -28,9 +28,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "SwiftyScepTests"
-               BuildableName = "SwiftyScepTests"
-               BlueprintName = "SwiftyScepTests"
+               BlueprintIdentifier = "DulocCastleTests"
+               BuildableName = "DulocCastleTests"
+               BlueprintName = "DulocCastleTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,9 +46,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "SwiftyScepTests"
-               BuildableName = "SwiftyScepTests"
-               BlueprintName = "SwiftyScepTests"
+               BlueprintIdentifier = "DulocCastleTests"
+               BuildableName = "DulocCastleTests"
+               BlueprintName = "DulocCastleTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -74,9 +74,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "SwiftyScep"
-            BuildableName = "SwiftyScep"
-            BlueprintName = "SwiftyScep"
+            BlueprintIdentifier = "DulocCastle"
+            BuildableName = "DulocCastle"
+            BlueprintName = "DulocCastle"
             ReferencedContainer = "container:">
          </BuildableReference>
       </MacroExpansion>
