@@ -1,6 +1,6 @@
-# SwiftyScep
+# DulocCastle
 
-Swifty Scep is a SCEP client written in Swift.
+DulocCastle is a general cryptographic library written in Swift.
 
 [![Swift Version][swift-image]][swift-url] [![License][license-image]][license-url]
 
@@ -10,22 +10,22 @@ I couldn't find anything that really got the job done so I've decided to take a 
 The intention of this library is that it will not depend on any other libraries and will be fully self contained. 
 Therefore - it will be more than just a SCEP client. It will also be a fully loaded PKI library that is able to create most PKI structures.
 
-A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/ASN1Swift)
+A lot of inspiration for the creation of this library was BouncyCastle in Java and it's lack of existence in Swift.
 
 ## Features
 ### PKI Features
-#### ASN.1 Reader (0.1.0)
+#### ASN.1 Decoder (0.1.0)
 - [ ] Reading ASN.1 BER/DER/CER format
 - [ ] Conversion of ASN.1 data to Swift types
 - [ ] Ease of use functionality for ASN.1 traversal (probably with dictionaries)
 
-#### ASN.1 Writer (0.2.0)
-- [ ] Encoding bytes using the ASN.1 BER encoding format
+#### ASN.1 Encoder (0.2.0)
+- [ ] Encoding bytes using the ASN.1 BER/DER encoding format
 - [ ] Easy insertion of new bytes to already written structure
 - [ ] Composition of structured and nested types
 - [ ] Wrapping of existing structures
 
-#### General PKI (0.4.0)
+#### General PKI Structures (0.4.0)
 - [x] PEM to DER Conversion (0.3.1)
 - [x] DER to PEM Conversion (0.3.1)
 - [x] RSA and ECC key generation (Apple SecKey/Secure Enclave) (0.3.2)
@@ -52,27 +52,6 @@ A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/A
   - [ ] Swift
   - [ ] ASN.1
 
-### SCEP Features(1.0.0)
-  - [ ] SCEP pkcsPKIEnvelope construction (Enveloped PKCS#7) (0.5.0)
-    - [ ] PKCSReq
-    - [ ] RenewalReq
-    - [ ] CertPoll
-    - [ ] GetCert
-    - [ ] GetCRL
-  - [ ] SCEP client (0.6.0)
-    - [ ] Server capabilities fetching
-    - [ ] Certificate chain
-    - [ ] Certificate revocation lists
-    - [ ] Certificate issuance request
-    - [ ] Certificate issuance polling
-    - [ ] Certificate reissuance
-
-
-[swift-image]:https://img.shields.io/badge/swift-5.0-orange.svg
-[swift-url]:https://swift.org/
-[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
-[license-url]: LICENSE
-
 ## Usage
 
 `There isn't really anything to use at the moment but keep checking back!`
@@ -90,3 +69,8 @@ A lot of inspiration was taken from the [ASN1 Swift](https://github.com/tikhop/A
 - [PKCS#7 Cryptographic Message Syntax (CMS) RFC](https://datatracker.ietf.org/doc/html/rfc2315)
 
 - [Simple Certificate Enrollment Protocol (SCEP) RFC](https://datatracker.ietf.org/doc/html/rfc8894)
+
+[swift-image]:https://img.shields.io/badge/swift-5.0-orange.svg
+[swift-url]:https://swift.org/
+[license-image]: https://img.shields.io/badge/License-MIT-blue.svg
+[license-url]: LICENSE
