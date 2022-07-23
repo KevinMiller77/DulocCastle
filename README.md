@@ -60,6 +60,10 @@ A lot of inspiration for the creation of this library was BouncyCastle in Java a
 
 - [Laymans ASN.1 BER and DER](http://luca.ntop.org/Teaching/Appunti/asn1.html)
 
+- [X.690 ASN.1 Encoding Rules](https://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf)
+
+- [X.690 Sepcification of ASN.1 basic notation](https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-X.680-202102-I!!PDF-E&type=items)
+
 - [RSA Public Key Cryptography Syntax (PKCS) RFC](https://datatracker.ietf.org/doc/html/rfc8017)
 
 - [X.509 & Certificate Revocation List (CRL) RFC](https://datatracker.ietf.org/doc/html/rfc5280)
