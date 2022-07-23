@@ -93,18 +93,18 @@ struct Asn1TagAndLengthUtils {
 
     // Read lengths from byte array, returning nil if
     // an indefinite length encoding shall be used
-    static func read(_ bytes: inout [UInt8]) -> Int? {
+    static func read(_ bytes: inout [UInt8]) -> UInt? {
         // Indefinite length given, or invalid length if used for tags
         if (bytes[0] == 0b10000000) {
             bytes.removeFirst()
             return nil
         }
         
-        var out: Int = 0
+        var out: UInt = 0
         while (true) {
             let nextByte = bytes.removeFirst()
 
-            out += Int(nextByte & Asn1MetadataBitmask.LEN_CONTENT.rawValue)
+            out += UInt(nextByte & Asn1MetadataBitmask.LEN_CONTENT.rawValue)
             
             if(nextByte & Asn1MetadataBitmask.LEN_CONTINUE.rawValue == 0) {
                 break;
@@ -116,7 +116,7 @@ struct Asn1TagAndLengthUtils {
     
     // Write lengths to a byte array with the ability to set the
     // indefinite length byte for the Content length
-    static func write(_ toWrite: Int, indefiniteLength: Bool = false) -> [UInt8] {
+    static func write(_ toWrite: UInt, indefiniteLength: Bool = false) -> [UInt8] {
         if (indefiniteLength) {
             return [ 0b10000000 ]
         }
@@ -132,7 +132,7 @@ struct Asn1TagAndLengthUtils {
 
             // More bytes to come, fill this byte to indicate more will follow
             // Writing 0xFF is forbidden in length writing so we will just use 0xFE
-            remainingToWrite -= Int(Asn1MetadataBitmask.LEN_MAX_WRITE.rawValue)
+            remainingToWrite -= UInt(Asn1MetadataBitmask.LEN_MAX_WRITE.rawValue)
             
             outBytes.append(0xFE)
         }
@@ -148,7 +148,7 @@ struct Asn1ContentIdentifier {
     // For the tag do we want a seperate var for the enum type
     // and for the raw value? Or just use Int?
     var idUniTag : Asn1IdUniversalTag
-    var idRawTag    : Int
+    var idRawTag : UInt
     
     /// Read the content identifier information and move the pointer by that length.
     /// We should expect to be pointing to the content length when we leave this function.
@@ -169,7 +169,7 @@ struct Asn1ContentIdentifier {
                 idClass:    classEnum,
                 idMethod:   methodEnum,
                 idUniTag:   tagEnum,
-                idRawTag:   Int(tagEnum.rawValue)
+                idRawTag:   UInt(tagEnum.rawValue)
             )
         }
         
