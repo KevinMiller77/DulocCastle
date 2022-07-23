@@ -1,5 +1,5 @@
 //
-//  Asn1ContentIdentifierTests.swift
+//  Asn1ContentMetadataTests.swift
 //  
 //
 //  Created by Kevin Miller on 7/23/22.
@@ -8,7 +8,7 @@
 import XCTest
 @testable import DulocCastle
 
-final class Asn1ContentIdentifierTests: XCTestCase {
+final class Asn1ContentMetadataTests: XCTestCase {
 
     // Not an actual test, just assists with the below test cases
     // do not start this function name with 'test'
@@ -31,7 +31,7 @@ final class Asn1ContentIdentifierTests: XCTestCase {
         try readWriteAsn1ContentIdentifierTestEngine(
             
             // Outline your """Raw BER Identifier"""
-            [ 0b00011111, 0b11111111, 0b11111111, 0b00001111 ],
+            [ 0b00011111, 0b11111110, 0b11111110, 0b00010001 ],
             
             // Outline the corresponding Swift struct
             Asn1ContentIdentifier(

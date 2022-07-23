@@ -1,5 +1,5 @@
 //
-//  Asn1ContentIdentifier.swift
+//  Asn1ContentMetdata.swift
 //  
 //
 //  Created by Kevin Miller on 7/23/22.
@@ -7,15 +7,16 @@
 
 import Foundation
 
-enum Asn1IdentifierBitmask: UInt8 {
+enum Asn1MetadataBitmask: UInt8 {
     // Initial Byte
     case CLASS    = 0b11000000
     case METHOD   = 0b00100000
     case TAG      = 0b00011111
     
     // Length Parsing
-    case LEN_CONTINUE = 0b10000000
-    case LEN_CONTENT  = 0b01111111
+    case LEN_CONTINUE   = 0b10000000
+    case LEN_CONTENT    = 0b01111111
+    case LEN_MAX_WRITE  = 0b01111110
 }
 
 enum Asn1IdClass: UInt8 {
@@ -25,7 +26,7 @@ enum Asn1IdClass: UInt8 {
     case PRIVATE        = 0x03
     
     init(leadingByte: UInt8) {
-        let masked = (leadingByte & Asn1IdentifierBitmask.CLASS.rawValue) >> 6
+        let masked = (leadingByte & Asn1MetadataBitmask.CLASS.rawValue) >> 6
         
         // Force unwrap is safe due to bitmask
         self = Asn1IdClass(rawValue: masked)!
@@ -37,7 +38,7 @@ enum Asn1IdMethod: UInt8 {
     case CONSTRUCTED    = 0x01
     
     init(leadingByte: UInt8) {
-        let masked = (leadingByte & Asn1IdentifierBitmask.METHOD.rawValue) >> 5
+        let masked = (leadingByte & Asn1MetadataBitmask.METHOD.rawValue) >> 5
         
         // Force unwrap is safe due to bitmask
         self = Asn1IdMethod(rawValue: masked)!
@@ -79,13 +80,66 @@ enum Asn1IdUniversalTag: UInt8 {
     case BER_CUSTOM_TAG         = 0x1F
     
     init(leadingByte: UInt8) {
-        let masked = leadingByte & Asn1IdentifierBitmask.TAG.rawValue
+        let masked = leadingByte & Asn1MetadataBitmask.TAG.rawValue
         
         // Force unwrap is safe due to bitmask
         self = Asn1IdUniversalTag(rawValue: masked)!
     }
 }
 
+// Content length and Tag are written and read nearly identically
+// there is actually no harm in reading and writing them the same way
+struct Asn1TagAndLengthUtils {
+
+    // Read lengths from byte array, returning nil if
+    // an indefinite length encoding shall be used
+    static func read(_ bytes: inout [UInt8]) -> Int? {
+        // Indefinite length given, or invalid length if used for tags
+        if (bytes[0] == 0b10000000) {
+            bytes.removeFirst()
+            return nil
+        }
+        
+        var out: Int = 0
+        while (true) {
+            let nextByte = bytes.removeFirst()
+
+            out += Int(nextByte & Asn1MetadataBitmask.LEN_CONTENT.rawValue)
+            
+            if(nextByte & Asn1MetadataBitmask.LEN_CONTINUE.rawValue == 0) {
+                break;
+            }
+        }
+        
+        return out
+    }
+    
+    // Write lengths to a byte array with the ability to set the
+    // indefinite length byte for the Content length
+    static func write(_ toWrite: Int, indefiniteLength: Bool = false) -> [UInt8] {
+        if (indefiniteLength) {
+            return [ 0b10000000 ]
+        }
+        
+        var outBytes: [UInt8] = []
+        var remainingToWrite = toWrite
+        while(true) {
+            // If we're on the last byte, just add the remaing tag number and return
+            if (remainingToWrite <= Int(Asn1MetadataBitmask.LEN_MAX_WRITE.rawValue)) {
+                outBytes.append(UInt8(remainingToWrite))
+                break
+            }
+
+            // More bytes to come, fill this byte to indicate more will follow
+            // Writing 0xFF is forbidden in length writing so we will just use 0xFE
+            remainingToWrite -= Int(Asn1MetadataBitmask.LEN_MAX_WRITE.rawValue)
+            
+            outBytes.append(0xFE)
+        }
+        
+        return outBytes
+    }
+}
 
 struct Asn1ContentIdentifier {
     var idClass  : Asn1IdClass
@@ -115,27 +169,20 @@ struct Asn1ContentIdentifier {
                 idClass:    classEnum,
                 idMethod:   methodEnum,
                 idUniTag:   tagEnum,
-                idRawTag:      Int(tagEnum.rawValue)
+                idRawTag:   Int(tagEnum.rawValue)
             )
         }
         
-        var customTag: Int = 0
-        
-        while (true) {
-            let nextByte = bytes.removeFirst()
-
-            customTag += Int(nextByte & Asn1IdentifierBitmask.LEN_CONTENT.rawValue)
-            
-            if(nextByte & Asn1IdentifierBitmask.LEN_CONTINUE.rawValue == 0) {
-                break;
-            }
-        }
+        // TODO: (KevinMiller) Add handling invalid length
+        // Force unwrapping is NOT safe here and needs to be changed
+        // Maybe make all read functions throws?
+        let customTag = Asn1TagAndLengthUtils.read(&bytes)!
         
         return Asn1ContentIdentifier(
             idClass:    classEnum,
             idMethod:   methodEnum,
             idUniTag:   tagEnum,
-            idRawTag:      customTag
+            idRawTag:   customTag
         )
     }
     
@@ -154,20 +201,8 @@ struct Asn1ContentIdentifier {
             return out
         }
         
-        var tagRemaining = idRawTag
         
-        while(true) {
-            // If we're on the last byte, just add the remaing tag number and return
-            if (tagRemaining <= Int(Asn1IdentifierBitmask.LEN_CONTENT.rawValue)) {
-                out.append(UInt8(tagRemaining))
-                break
-            }
-
-            // More bytes to come, fill this byte to indicate more will follow
-            // This method ensures we use the least number of bytes for the tag
-            tagRemaining -= Int(Asn1IdentifierBitmask.LEN_CONTENT.rawValue)
-            out.append(0xFF)
-        }
+        out += Asn1TagAndLengthUtils.write(idRawTag)
         
         return out
     }
