@@ -38,7 +38,7 @@ final class Asn1ContentIdentifierTests: XCTestCase {
                 idClass: .UNIVERSAL,
                 idMethod: .PRIMITIVE,
                 idUniTag: .BER_CUSTOM_TAG,
-                idTag: 269
+                idRawTag: 269
             )
         )
         
@@ -52,7 +52,7 @@ final class Asn1ContentIdentifierTests: XCTestCase {
                 idClass: .APPLICATION,
                 idMethod: .CONSTRUCTED,
                 idUniTag: .BER_OID,
-                idTag: Int(Asn1IdUniversalTag.BER_OID.rawValue)
+                idRawTag: Int(Asn1IdUniversalTag.BER_OID.rawValue)
             )
         )
         
@@ -65,7 +65,7 @@ final class Asn1ContentIdentifierTests: XCTestCase {
                 idClass: .CONTEXTUAL,
                 idMethod: .PRIMITIVE,
                 idUniTag: .BER_OCTET_STRING,
-                idTag: Int(Asn1IdUniversalTag.BER_OCTET_STRING.rawValue)
+                idRawTag: Int(Asn1IdUniversalTag.BER_OCTET_STRING.rawValue)
             )
         )
         
@@ -78,7 +78,7 @@ final class Asn1ContentIdentifierTests: XCTestCase {
                 idClass: .PRIVATE,
                 idMethod: .CONSTRUCTED,
                 idUniTag: .BER_INTEGER,
-                idTag: Int(Asn1IdUniversalTag.BER_INTEGER.rawValue)
+                idRawTag: Int(Asn1IdUniversalTag.BER_INTEGER.rawValue)
             )
         )
     }

@@ -23,11 +23,25 @@ enum Asn1IdClass: UInt8 {
     case APPLICATION    = 0x01
     case CONTEXTUAL     = 0x02
     case PRIVATE        = 0x03
+    
+    init(leadingByte: UInt8) {
+        let masked = (leadingByte & Asn1IdentifierBitmask.CLASS.rawValue) >> 6
+        
+        // Force unwrap is safe due to bitmask
+        self = Asn1IdClass(rawValue: masked)!
+    }
 }
 
 enum Asn1IdMethod: UInt8 {
     case PRIMITIVE      = 0x00
     case CONSTRUCTED    = 0x01
+    
+    init(leadingByte: UInt8) {
+        let masked = (leadingByte & Asn1IdentifierBitmask.METHOD.rawValue) >> 5
+        
+        // Force unwrap is safe due to bitmask
+        self = Asn1IdMethod(rawValue: masked)!
+    }
 }
 
 enum Asn1IdUniversalTag: UInt8 {
@@ -63,6 +77,13 @@ enum Asn1IdUniversalTag: UInt8 {
     case BER_CHARACTER_STRING   = 0x1D
     case BER_BMP_STRING         = 0x1E
     case BER_CUSTOM_TAG         = 0x1F
+    
+    init(leadingByte: UInt8) {
+        let masked = leadingByte & Asn1IdentifierBitmask.TAG.rawValue
+        
+        // Force unwrap is safe due to bitmask
+        self = Asn1IdUniversalTag(rawValue: masked)!
+    }
 }
 
 
@@ -73,22 +94,16 @@ struct Asn1ContentIdentifier {
     // For the tag do we want a seperate var for the enum type
     // and for the raw value? Or just use Int?
     var idUniTag : Asn1IdUniversalTag
-    var idTag    : Int
+    var idRawTag    : Int
     
     /// Read the content identifier information and move the pointer by that length.
     /// We should expect to be pointing to the content length when we leave this function.
     static func read(_ bytes: inout [UInt8]) -> Asn1ContentIdentifier {
         let leadingByte = bytes.removeFirst()
         
-        let classMasked  : UInt8 = (leadingByte & Asn1IdentifierBitmask.CLASS.rawValue)  >> 6
-        let methodMasked : UInt8 = (leadingByte & Asn1IdentifierBitmask.METHOD.rawValue) >> 5
-        let tagMasked    : UInt8 = (leadingByte & Asn1IdentifierBitmask.TAG.rawValue)
-        
-        // Force unwrap is only okay here because we do the mask & bit shift
-        // Class is always <= 0x03 and Tag is always <= 0x1F
-        let classEnum   = Asn1IdClass(rawValue: classMasked)!
-        let methodEnum  = Asn1IdMethod(rawValue: methodMasked)!
-        let tagEnum     = Asn1IdUniversalTag(rawValue: tagMasked)!
+        let classEnum   = Asn1IdClass(leadingByte: leadingByte)
+        let methodEnum  = Asn1IdMethod(leadingByte: leadingByte)
+        let tagEnum     = Asn1IdUniversalTag(leadingByte: leadingByte)
         
         // TODO: (KevinMiller77) Decide what to do if we ever encounter tag == 0x0F
         // According to the ISO it is reserved for future uses
@@ -97,30 +112,30 @@ struct Asn1ContentIdentifier {
         // If the tag is not custom, return now
         if (tagEnum != .BER_CUSTOM_TAG) {
             return Asn1ContentIdentifier(
-                idClass: classEnum,
-                idMethod: methodEnum,
-                idUniTag: tagEnum,
-                idTag: Int(tagEnum.rawValue)
+                idClass:    classEnum,
+                idMethod:   methodEnum,
+                idUniTag:   tagEnum,
+                idRawTag:      Int(tagEnum.rawValue)
             )
         }
         
         var customTag: Int = 0
         
-        var reading = true
-        while (reading) {
-            let byte = bytes.removeFirst()
+        while (true) {
+            let nextByte = bytes.removeFirst()
 
-            let accum: UInt8 = (byte & Asn1IdentifierBitmask.LEN_CONTENT.rawValue)
-            customTag += Int(accum)
+            customTag += Int(nextByte & Asn1IdentifierBitmask.LEN_CONTENT.rawValue)
             
-            reading = (byte & Asn1IdentifierBitmask.LEN_CONTINUE.rawValue) != 0
+            if(nextByte & Asn1IdentifierBitmask.LEN_CONTINUE.rawValue == 0) {
+                break;
+            }
         }
         
         return Asn1ContentIdentifier(
-            idClass: classEnum,
-            idMethod: methodEnum,
-            idUniTag: tagEnum,
-            idTag: customTag
+            idClass:    classEnum,
+            idMethod:   methodEnum,
+            idUniTag:   tagEnum,
+            idRawTag:      customTag
         )
     }
     
@@ -132,21 +147,24 @@ struct Asn1ContentIdentifier {
         leadingByte |= (idMethod.rawValue << 5)
         leadingByte |= (idUniTag.rawValue)
         
+        var out: [UInt8] = [leadingByte]
+        
+        // If the tag is not custom, we're done
         if (idUniTag != .BER_CUSTOM_TAG) {
-            return [leadingByte]
+            return out
         }
         
-        var out: [UInt8] = [leadingByte]
-        var tagRemaining = idTag
+        var tagRemaining = idRawTag
         
         while(true) {
-            // This is the last byte to write
+            // If we're on the last byte, just add the remaing tag number and return
             if (tagRemaining <= Int(Asn1IdentifierBitmask.LEN_CONTENT.rawValue)) {
                 out.append(UInt8(tagRemaining))
                 break
             }
 
             // More bytes to come, fill this byte to indicate more will follow
+            // This method ensures we use the least number of bytes for the tag
             tagRemaining -= Int(Asn1IdentifierBitmask.LEN_CONTENT.rawValue)
             out.append(0xFF)
         }
@@ -159,8 +177,8 @@ struct Asn1ContentIdentifier {
         let classMatch  = lhs.idClass == rhs.idClass
         let methodMatch = lhs.idMethod == rhs.idMethod
         let uniTagMatch = lhs.idUniTag == rhs.idUniTag
-        let tagMatch    = lhs.idTag == rhs.idTag
+        let rawTagMatch    = lhs.idRawTag == rhs.idRawTag
         
-        return (classMatch && methodMatch) && (uniTagMatch && tagMatch)
+        return (classMatch && methodMatch) && (uniTagMatch && rawTagMatch)
     }
 }
