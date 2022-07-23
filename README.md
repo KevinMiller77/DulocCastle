@@ -4,11 +4,11 @@ DulocCastle is a general cryptographic library written in Swift.
 
 [![Swift Version][swift-image]][swift-url] [![License][license-image]][license-url]
 
-I was looking for a nice SCEP client that easily interfaces with Apple CommonCrypto and Keychain. 
+I was looking for a nice cryptographic library that easily interfaces with Apple CommonCrypto and Keychain. 
 I couldn't find anything that really got the job done so I've decided to take a crack at it myself.
 
 The intention of this library is that it will not depend on any other libraries and will be fully self contained. 
-Therefore - it will be more than just a SCEP client. It will also be a fully loaded PKI library that is able to create most PKI structures.
+It will be a fully loaded PKI library that will support the most common cryptpgraphic structures and functions.
 
 A lot of inspiration for the creation of this library was BouncyCastle in Java and it's lack of existence in Swift.
 
