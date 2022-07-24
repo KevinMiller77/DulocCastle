@@ -14,7 +14,12 @@ enum Asn1MetadataBitmask: UInt8 {
     case TAG      = 0b00011111
     
     // Length Parsing
-    case LEN_CONTINUE   = 0b10000000
+    
+    // Modifier bit actions
+    // Tag Len      => Short/Long form
+    // Tag Len      => If Long form, continue if present
+    // Content Len  => Short/Long form
+    case LEN_MODIFIER   = 0b10000000
     case LEN_CONTENT    = 0b01111111
     case LEN_MAX_WRITE  = 0b01111110
 }
@@ -87,26 +92,19 @@ enum Asn1IdUniversalTag: UInt8 {
     }
 }
 
-// Content length and Tag are written and read nearly identically
-// there is actually no harm in reading and writing them the same way
-struct Asn1TagAndLengthUtils {
+struct Asn1TagLengthUtils {
 
     // Read lengths from byte array, returning nil if
     // an indefinite length encoding shall be used
-    static func read(_ bytes: inout [UInt8]) -> UInt? {
-        // Indefinite length given, or invalid length if used for tags
-        if (bytes[0] == 0b10000000) {
-            bytes.removeFirst()
-            return nil
-        }
-        
+    static func read(_ bytes: inout [UInt8]) -> UInt {
         var out: UInt = 0
+        
         while (true) {
             let nextByte = bytes.removeFirst()
 
             out += UInt(nextByte & Asn1MetadataBitmask.LEN_CONTENT.rawValue)
             
-            if(nextByte & Asn1MetadataBitmask.LEN_CONTINUE.rawValue == 0) {
+            if(nextByte & Asn1MetadataBitmask.LEN_MODIFIER.rawValue == 0) {
                 break;
             }
         }
@@ -116,12 +114,9 @@ struct Asn1TagAndLengthUtils {
     
     // Write lengths to a byte array with the ability to set the
     // indefinite length byte for the Content length
-    static func write(_ toWrite: UInt, indefiniteLength: Bool = false) -> [UInt8] {
-        if (indefiniteLength) {
-            return [ 0b10000000 ]
-        }
-        
+    static func write(_ toWrite: UInt) -> [UInt8] {
         var outBytes: [UInt8] = []
+        
         var remainingToWrite = toWrite
         while(true) {
             // If we're on the last byte, just add the remaing tag number and return
@@ -141,7 +136,75 @@ struct Asn1TagAndLengthUtils {
     }
 }
 
-struct Asn1ContentIdentifier {
+struct Asn1ContentLengthUtils {
+    // Read lengths from byte array
+    /// return nil if indefinite length encoding shall be used
+    static func read(_ bytes: inout [UInt8]) -> UInt? {
+        let leadingByte = bytes.removeFirst()
+        
+        // Indefinite length given
+        if (leadingByte == Asn1MetadataBitmask.LEN_MODIFIER.rawValue) {
+            return nil
+        }
+        
+        // If no modifier present, return the leading byte
+        if (leadingByte & Asn1MetadataBitmask.LEN_MODIFIER.rawValue == 0) {
+            return UInt(leadingByte)
+        }
+        
+        // Modifier was present, this byte describes the number
+        // of proceeding length bytes
+        let numBytes = leadingByte & Asn1MetadataBitmask.LEN_CONTENT.rawValue
+        
+        var out: UInt = 0
+        for _ in 0 ..< numBytes {
+            out <<= 8
+            out  |= UInt(bytes.removeFirst())
+        }
+        
+        return out
+    }
+    
+    // Write lengths to a byte array with the ability to set the
+    // indefinite length byte for the Content length
+    static func write(_ toWrite: UInt? = nil) -> [UInt8] {
+        if (toWrite == nil) {
+            return [ 0b10000000 ]
+        }
+        
+        // Already nil checked
+        let num = toWrite!
+
+        // If length is small enough, just use the leading byte
+        if (num < 0b10000000) {
+            return [ UInt8(toWrite!) ]
+        }
+        
+        let numBitsToStore = UInt.bitWidth - num.leadingZeroBitCount
+        let numBytesToStore = UInt8(ceil(Float(numBitsToStore) / 8.0))
+        
+        var bitOffset   : UInt8 = UInt8(numBytesToStore * 8) - 8
+        var window      : UInt = 0xFF << bitOffset
+        
+        var out: [UInt8] = [ 0b10000000 + numBytesToStore ]
+        
+        while(true) {
+            let curByte = (num & window) >> bitOffset
+            out.append(UInt8(curByte))
+            
+            if (window == 0xFF) {
+                break;
+            }
+            
+            bitOffset  -= 8
+            window    >>= 8
+        }
+        
+        return out
+    }
+}
+
+struct Asn1ContentMetadata {
     var idClass  : Asn1IdClass
     var idMethod : Asn1IdMethod
     
@@ -150,39 +213,37 @@ struct Asn1ContentIdentifier {
     var idUniTag : Asn1IdUniversalTag
     var idRawTag : UInt
     
+    // Actual length of the following content
+    // nil means indefinite length
+    var contentLength : UInt?
+    
     /// Read the content identifier information and move the pointer by that length.
     /// We should expect to be pointing to the content length when we leave this function.
-    static func read(_ bytes: inout [UInt8]) -> Asn1ContentIdentifier {
+    static func read(_ bytes: inout [UInt8]) -> Asn1ContentMetadata {
         let leadingByte = bytes.removeFirst()
         
-        let classEnum   = Asn1IdClass(leadingByte: leadingByte)
-        let methodEnum  = Asn1IdMethod(leadingByte: leadingByte)
-        let tagEnum     = Asn1IdUniversalTag(leadingByte: leadingByte)
+        let classEnum    = Asn1IdClass(leadingByte: leadingByte)
+        let methodEnum   = Asn1IdMethod(leadingByte: leadingByte)
+        let tagEnum      = Asn1IdUniversalTag(leadingByte: leadingByte)
+        var tagVal: UInt = UInt(tagEnum.rawValue)
         
         // TODO: (KevinMiller77) Decide what to do if we ever encounter tag == 0x0F
         // According to the ISO it is reserved for future uses
         // https://tinyurl.com/3expmjb2
         
         // If the tag is not custom, return now
-        if (tagEnum != .BER_CUSTOM_TAG) {
-            return Asn1ContentIdentifier(
-                idClass:    classEnum,
-                idMethod:   methodEnum,
-                idUniTag:   tagEnum,
-                idRawTag:   UInt(tagEnum.rawValue)
-            )
+        if (tagEnum == .BER_CUSTOM_TAG) {
+            tagVal = Asn1TagLengthUtils.read(&bytes)
         }
         
-        // TODO: (KevinMiller) Add handling invalid length
-        // Force unwrapping is NOT safe here and needs to be changed
-        // Maybe make all read functions throws?
-        let customTag = Asn1TagAndLengthUtils.read(&bytes)!
+        let contentLength = Asn1ContentLengthUtils.read(&bytes)
         
-        return Asn1ContentIdentifier(
-            idClass:    classEnum,
-            idMethod:   methodEnum,
-            idUniTag:   tagEnum,
-            idRawTag:   customTag
+        return Asn1ContentMetadata(
+            idClass:        classEnum,
+            idMethod:       methodEnum,
+            idUniTag:       tagEnum,
+            idRawTag:       tagVal,
+            contentLength:  contentLength
         )
     }
     
@@ -198,22 +259,25 @@ struct Asn1ContentIdentifier {
         
         // If the tag is not custom, we're done
         if (idUniTag != .BER_CUSTOM_TAG) {
+            out += Asn1ContentLengthUtils.write(contentLength)
             return out
         }
         
         
-        out += Asn1TagAndLengthUtils.write(idRawTag)
+        out += Asn1TagLengthUtils.write(idRawTag)
+        out += Asn1ContentLengthUtils.write(contentLength)
         
         return out
     }
     
     // Comparator needed for test validation
-    static func ==(lhs: Asn1ContentIdentifier, rhs: Asn1ContentIdentifier) -> Bool {
+    static func ==(lhs: Asn1ContentMetadata, rhs: Asn1ContentMetadata) -> Bool {
         let classMatch  = lhs.idClass == rhs.idClass
         let methodMatch = lhs.idMethod == rhs.idMethod
         let uniTagMatch = lhs.idUniTag == rhs.idUniTag
         let rawTagMatch    = lhs.idRawTag == rhs.idRawTag
+        let contentLenMatch = lhs.contentLength == rhs.contentLength
         
-        return (classMatch && methodMatch) && (uniTagMatch && rawTagMatch)
+        return (classMatch && methodMatch) && (uniTagMatch && rawTagMatch) && contentLenMatch
     }
 }
