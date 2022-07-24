@@ -7,22 +7,21 @@
 
 import Foundation
 
-/// We will have 4 required UNIQUE fields for every OID
-///     * OBJ (Array)   => [1, 2, 840, 113549, 1, 11]
-///     * STR (String)  => "1.2.840.113549.1.11"
-///     * UUID (Int)      => Int identifier for each OID which is its' key in our OID repo
-///     * NAME (Srint) => "pkcs-11"
-///
-///     The above is a "child" of the OID "pkcs" = "1.2.840.113.549.1"
-///     Which itself is a child of the OID "rsadsi" = "1.2.840.113549"
-///
-///     We should have a way to make RelativeOIDs
-///     * "pkcs-11" = { "pkcs", [ 11 ] }
-///     * "pkcs-11" = { "rsadsi", [ 1, 11] }
-///     * etc
-///
+enum Asn1OidAccessError: Error {
+    case OidNotFoundErr
+    case OidInUseErr
+    case OidUuidNotAllowedErr
+    case UnexpectedOidErr(message: String, code: Int? = nil)
+}
+
+enum OidConversionError: Error {
+    case InvalidStringRepresentationGivenErr
+    case UnexpectedOidConversionError(message: String, code: Int? = nil)
+}
+
+// Asn.1 Object Identifier (This will be codable)
 struct Asn1Oid {
-    var obj: [UInt16]
+    var obj: [UInt]
     var str:  String
     var name: String
     
@@ -31,7 +30,7 @@ struct Asn1Oid {
     var uuid: UInt
     
     fileprivate init(
-        _ obj: [UInt16],
+        _ obj: [UInt],
         _ str: String,
         _ name: String,
         _ uuid: UInt
@@ -43,37 +42,19 @@ struct Asn1Oid {
     }
 }
 
-enum Asn1OidAccessError: Error {
-    case OidNotFoundErr
-    case OidInUseErr
-    case OidUuidNotAllowedErr
-    case UnexpectedOidErr(message: String, code: Int? = nil)
-}
 
-// The registry stores all of our OID objects within dictionaries
-// for easy access using all 4 identifiers
+/// The registry stores all of our OID objects within dictionaries for easy access using all of the identifiers.
+/// This also ensures that there is only one source of truth for the available OIDs
+/// For someone using the library, they will register their custom OID with the registry and
+/// it will be verifed. Upon verification, they can get it using any identifier.
 struct Asn1OidRegistry {
     static private var implObjRegistry :  [String : Asn1Oid] = [:]
     static private var implNameRegistry:  [String : Asn1Oid] = [:]
     static private var implUuidRegistry:  [UInt  : Asn1Oid] = [:]
     
     // Methods for registering OIDs
-    // These are the only way that you can construct an OID
-    // OIDs may not use the Built In UUIDs
-    static func registerOid(
-        obj: [UInt16],
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
-        let str = obj2str(obj)
-        return try registerOid(str: str, name, uuid)
-    }
-    
-    static func registerOid(
-        str: String,
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
+    // These are the only way that you can construct an OID publicly
+    static func register(str: String, _ name: String, _ uuid: UInt) throws -> Asn1Oid {
         let obj = try str2obj(str)
         
         let oid = Asn1Oid(obj, str, name, uuid)
@@ -81,59 +62,59 @@ struct Asn1OidRegistry {
         if (!oidIsAvailable(oid)) {
             throw Asn1OidAccessError.OidUuidNotAllowedErr
         }
-
         performRegistration(oid: oid)
         
         return oid
     }
     
-    // Methods for registering relative OIDs
-    static func registerOid(
-        parent: Asn1Oid,
-        obj: [UInt16],
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
-        let str = parent.str + "." + obj2str(obj)
-        return try registerOid(str: str, name, uuid)
+    static func register(obj: [UInt], _ name: String, _ uuid: UInt) throws -> Asn1Oid {
+        return try register(str: obj2str(obj), name, uuid)
     }
     
-    static func registerOid(
-        parent: Asn1Oid,
-        str: String,
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
-        let childStr = parent.str + "." + str
-        let obj = try str2obj(childStr)
+    // Methods for registering relative OIDs
+    static func register(parent: Asn1Oid, str: String, _ name: String, _ uuid: UInt) throws -> Asn1Oid {
+        let oidStr = parent.str + "." + str
+        let obj = try str2obj(oidStr)
         
-        let oid = Asn1Oid(obj, childStr, name, uuid)
+        let oid = Asn1Oid(obj, oidStr, name, uuid)
         
         if (!oidIsAvailable(oid)) {
             throw Asn1OidAccessError.OidUuidNotAllowedErr
         }
-
         performRegistration(oid: oid)
         
         return oid
     }
+    static func register(parent: Asn1Oid, obj: [UInt], _ name: String, _ uuid: UInt) throws -> Asn1Oid {
+        return try register(parent: parent, str: obj2str(obj), name, uuid)
+    }
     
+    // Registry accessors (will init builtins if they aren't)
+    static func get(obj: [UInt]) -> Asn1Oid? {
+        return get(str: obj2str(obj))
+    }
+    
+    static func get(str: String) -> Asn1Oid? {
+        _ = _bootstrapIfNotDone
+        
+        return implObjRegistry[str]
+    }
+    
+    static func get(name: String) -> Asn1Oid? {
+        _ = _bootstrapIfNotDone
+        
+        return implNameRegistry[name]
+    }
+    
+    static func get(uuid: UInt) -> Asn1Oid? {
+        _ = _bootstrapIfNotDone
+        
+        return implUuidRegistry[uuid]
+    }
+
     // File private version of registration can
     // use reserved uuids and overwrite OIDs
-    fileprivate static func _registerOid(
-        obj: [UInt16],
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
-        let str = obj2str(obj)
-        return try _registerOid(str: str, name, uuid)
-    }
-    
-    fileprivate static func _registerOid(
-        str: String,
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
+    fileprivate static func _register(str: String, _ name: String, _ uuid: UInt) throws -> Asn1Oid {
         let obj = try str2obj(str)
         let oid = Asn1Oid(obj, str, name, uuid)
         
@@ -141,28 +122,20 @@ struct Asn1OidRegistry {
         
         return oid
     }
-    
-    // Methods for registering relative OIDs
-    static func _registerOid(
-        parent: Asn1Oid,
-        obj: [UInt16],
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
-        let str = parent.str + "." + obj2str(obj)
-        return try _registerOid(str: str, name, uuid)
+    fileprivate static func _register(obj: [UInt], _ name: String, _ uuid: UInt) throws -> Asn1Oid {
+        return try _register(str: obj2str(obj), name, uuid)
     }
     
-    static func _registerOid(
-        parent: Asn1Oid,
-        str: String,
-        _ name: String,
-        _ uuid: UInt
-    ) throws -> Asn1Oid {
+    // Methods for registering relative OIDs
+    fileprivate static func _register(parent: Asn1Oid, str: String, _ name: String, _ uuid: UInt) throws -> Asn1Oid {
         let childStr = parent.str + "." + str
         let obj = try str2obj(childStr)
         
-        return try _registerOid(obj: obj, name, uuid)
+        return try _register(obj: obj, name, uuid)
+    }
+    fileprivate static func _register(parent: Asn1Oid, obj: [UInt], _ name: String, _ uuid: UInt) throws -> Asn1Oid {
+        let oidStr = parent.str + "." + obj2str(obj)
+        return try _register(str: oidStr, name, uuid)
     }
     
     // Performs the persist on OIDs being registered
@@ -172,27 +145,9 @@ struct Asn1OidRegistry {
         implUuidRegistry[oid.uuid] = oid
     }
     
-    // Registry accessors
-    static func getOid(obj: [UInt16]) -> Asn1Oid? {
-        return getOid(str: obj2str(obj))
-    }
-
-    static func getOid(str: String) -> Asn1Oid? {
-        return implObjRegistry[str]
-    }
-
-    static func getOid(name: String) -> Asn1Oid? {
-        return implNameRegistry[name]
-    }
-
-    static func getOid(uuid: UInt) -> Asn1Oid? {
-        return implUuidRegistry[uuid]
-    }
-    
-    
     // Registry Helpers
-    static func oidIsAvailable(_ oid: Asn1Oid) -> Bool {
-        var available = false
+    static private func oidIsAvailable(_ oid: Asn1Oid) -> Bool {
+        var available = true
 
         if (oid.uuid < 0x1FFF) {
             available = false
@@ -211,25 +166,104 @@ struct Asn1OidRegistry {
         return available
     }
     
-    enum OidConversionError: Error {
-        case InvalidStringRepresentationGivenErr
-        case UnexpectedOidConversionError(message: String, code: Int? = nil)
-    }
-    
-    static func obj2str(_ obj: [UInt16]) -> String {
+    static private func obj2str(_ obj: [UInt]) -> String {
         return obj.map { num in
             return String(num)
         }.joined(separator: ".")
     }
     
-    static func str2obj(_ str: String) throws -> [UInt16] {
+    static private func str2obj(_ str: String) throws -> [UInt] {
         return try str.split(separator: ".").map { str in
-            guard let num = UInt16(str) else {
+            guard let num = UInt(str) else {
                 throw OidConversionError.InvalidStringRepresentationGivenErr
             }
             
             return num
         }
     }
-}
+    
+    // Due to lazy loading, we need to bootstrap our Built Ins at
+    // first access. This variable allows us to "one-shot" load everything
+    // the first time it is used. Just add this in the getters and it loads
+    // the registry on first get.
+    static private let  _bootstrapIfNotDone: Bool = _bootstrapRegistry()
+    static private func _bootstrapRegistry() -> Bool {
+        
+        // Get a reference to the built ins file
+        guard let registryFile = Bundle.module.url(
+            forResource: Asn1Constants.OID_REGISTRY_FILE,
+            withExtension: Asn1Constants.OID_REGISTRY_FILE_EXT
+        ) else {
+            fatalError("Invalid registry bootstrap file name!")
+        }
+        
+        var lines: [String.SubSequence]
+        do {
+            lines = try String(
+                contentsOf: registryFile,
+                encoding: .utf8
+            ).split(separator: "\n")
+        } catch {
+            fatalError("Couldn't open registry bootstrap file!")
+        }
+        
+        for line in lines {
+            if (line.starts(with: "//") || line.starts(with: "\n")) {
+                continue
+            }
+            
+            addItemToRegistryFromFileLine(String(line))
+        }
+        
+        return true
+    }
+    
+    private static func addItemToRegistryFromFileLine(_ str: String) {
+        // Key value pairs of name to OID UInts
+        var kvPairs = str.split(separator: "=")
+        if (kvPairs.count != 2) {
+            fatalError("Invalid contents of registry bootstrap file!")
+        }
+        
+        // The raw OID numbers (ie. "1.2.5.4.6")
+        // There is a change that the first item will be a parents name
+        var rawOidNumsAsStr = kvPairs[1].split(separator: ",")
+        if(rawOidNumsAsStr.count < 1) {
+            fatalError("Invalid contents of registry bootstrap file!")
+        }
+                  
+        // Check if this item has a parent
+        let outOidName = String(kvPairs.removeFirst())
+        let outOidUuid = Asn1OidBuiltIn.fromString(outOidName)!.rawValue
 
+        let possibleParentName = String(rawOidNumsAsStr[0])
+        let outOidParent: Asn1Oid? = implNameRegistry[possibleParentName]
+                    
+        if (outOidParent != nil) {
+            rawOidNumsAsStr.removeFirst()
+        }
+        
+        var outOidObj: [UInt] = []
+
+        // Process the OID numbers and append to the array
+        for idx in 0 ..< rawOidNumsAsStr.count {
+            let byteAsStr = String(rawOidNumsAsStr[idx])
+            
+            guard let itemUint = UInt(byteAsStr) else {
+                fatalError("Invalid contents of registry bootstrap file!")
+            }
+            
+            outOidObj.append(itemUint)
+        }
+        
+        do {
+            if (outOidParent != nil) {
+                _ = try _register(parent: outOidParent!, obj: outOidObj, outOidName, outOidUuid)
+            } else {
+                _ = try _register(obj: outOidObj, outOidName, outOidUuid)
+            }
+        } catch {
+            fatalError("Could not register built in OID")
+        }
+    }
+}

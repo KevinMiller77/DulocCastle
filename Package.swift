@@ -26,9 +26,15 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "DulocCastle",
-            dependencies: []),
+            dependencies: [],
+            resources: [
+                .process("Assets/OidRegistryBuiltIn.txt")
+            ]),
         .testTarget(
             name: "DulocCastleTests",
-            dependencies: ["DulocCastle"]),
+            dependencies: ["DulocCastle"],
+            resources: [
+                .process("../../Sources/DulocCastle/Assets/OidRegistryBuiltIn.txt")
+            ]),
     ]
 )
