@@ -15,6 +15,9 @@ import Foundation
 
 struct Asn1IntegerUtils {
     
+    private init() {
+    }
+    
     static func read(_ bytes: inout [UInt8], _ length: Int) -> Int {
         let leadingByte = bytes.removeFirst()
         let negative = leadingByte & 0b10000000 > 0

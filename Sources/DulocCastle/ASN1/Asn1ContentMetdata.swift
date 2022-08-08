@@ -92,11 +92,13 @@ enum Asn1IdUniversalTag: UInt8 {
     }
 }
 
-struct Asn1TagLengthUtils {
+struct Asn1TagLengthIO {
+    private init {
+    }
 
     // Read lengths from byte array, returning nil if
     // an indefinite length encoding shall be used
-    static func read(_ bytes: inout [UInt8]) -> UInt {
+    static func readTagLength(_ bytes: inout [UInt8]) -> UInt {
         var out: UInt = 0
         
         while (true) {
@@ -114,7 +116,7 @@ struct Asn1TagLengthUtils {
     
     // Write lengths to a byte array with the ability to set the
     // indefinite length byte for the Content length
-    static func write(_ toWrite: UInt) -> [UInt8] {
+    static func writeTagLength(_ toWrite: UInt) -> [UInt8] {
         var outBytes: [UInt8] = []
         
         var remainingToWrite = toWrite
@@ -136,10 +138,14 @@ struct Asn1TagLengthUtils {
     }
 }
 
-struct Asn1ContentLengthUtils {
+struct Asn1ContentLengthIO {
+    
+    private init() {
+    }
+    
     // Read lengths from byte array
     /// return nil if indefinite length encoding shall be used
-    static func read(_ bytes: inout [UInt8]) -> UInt? {
+    static func readContentLength(_ bytes: inout [UInt8]) -> UInt? {
         let leadingByte = bytes.removeFirst()
         
         // Indefinite length given
@@ -167,7 +173,7 @@ struct Asn1ContentLengthUtils {
     
     // Write lengths to a byte array with the ability to set the
     // indefinite length byte for the Content length
-    static func write(_ toWrite: UInt? = nil) -> [UInt8] {
+    static func writeContentLength(_ toWrite: UInt? = nil) -> [UInt8] {
         if (toWrite == nil) {
             return [ 0b10000000 ]
         }
@@ -217,6 +223,9 @@ struct Asn1ContentMetadata {
     // nil means indefinite length
     var contentLength : UInt?
     
+    private init() {
+    }
+    
     /// Read the content identifier information and move the pointer by that length.
     /// We should expect to be pointing to the content length when we leave this function.
     static func read(_ bytes: inout [UInt8]) -> Asn1ContentMetadata {
@@ -233,10 +242,10 @@ struct Asn1ContentMetadata {
         
         // If the tag is not custom, return now
         if (tagEnum == .BER_CUSTOM_TAG) {
-            tagVal = Asn1TagLengthUtils.read(&bytes)
+            tagVal = Asn1TagLengthIO.readTagLength(&bytes)
         }
         
-        let contentLength = Asn1ContentLengthUtils.read(&bytes)
+        let contentLength = Asn1ContentLengthIO.readContentLength(&bytes)
         
         return Asn1ContentMetadata(
             idClass:        classEnum,
@@ -259,13 +268,13 @@ struct Asn1ContentMetadata {
         
         // If the tag is not custom, we're done
         if (idUniTag != .BER_CUSTOM_TAG) {
-            out += Asn1ContentLengthUtils.write(contentLength)
+            out += Asn1ContentLengthIO.writeContentLength(contentLength)
             return out
         }
         
         
-        out += Asn1TagLengthUtils.write(idRawTag)
-        out += Asn1ContentLengthUtils.write(contentLength)
+        out += Asn1TagLengthIO.writeTagLength(idRawTag)
+        out += Asn1ContentLengthIO.writeContentLength(contentLength)
         
         return out
     }

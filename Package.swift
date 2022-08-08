@@ -27,14 +27,12 @@ let package = Package(
         .target(
             name: "DulocCastle",
             dependencies: [],
-            resources: [
-                .process("Assets/OidRegistryBuiltIn.txt")
-            ]),
+            resources: []
+        ),
         .testTarget(
             name: "DulocCastleTests",
             dependencies: ["DulocCastle"],
-            resources: [
-                .process("../../Sources/DulocCastle/Assets/OidRegistryBuiltIn.txt")
-            ]),
+            resources: []
+        )
     ]
 )
